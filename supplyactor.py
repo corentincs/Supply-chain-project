@@ -82,7 +82,7 @@ class Supermarket():
         else : 
             self.stockoverview[produit] -= quantité
 
-        while quantité != 0 : 
+        while quantité > 0.1 : 
             péremption_min,indice = self.péremption_max,-1
             
             for i in range(len(self.stock)) : 
@@ -90,7 +90,7 @@ class Supermarket():
                 if self.stock[i].Type == produit and (self.stock[i].DateLimiteDeConsomation <= péremption_min) and not(self.stock[i].DateLimiteDeConsomation < Date - délai): 
                     péremption_min = self.stock[i].DateLimiteDeConsomation
                     indice = i
-            if indice == -1 : raise Exception(str(indice)+ " "+str(self.StockDons[produit])+ " " + str(quantité) +" "+ str(self.id)+" "+str(délai))
+            if indice == -1 : raise Exception(str(indice)+ " "+str(self.StockDons[produit])+ " " + str(quantité) +" "+ str(self.id)+" "+str(délai)+""+str(Dons))
             if self.stock[indice].quantité > quantité + 0.1 : 
                 self.stock[indice].quantité -= quantité
                 quantité = 0
@@ -106,15 +106,17 @@ class Supermarket():
             for i in range(len(client.Besoin)) : 
                 produit,quantité = list(ProductType.keys())[i],client.Besoin[i] 
                 
-                if self.stockoverview[produit] <= 0.1 :
+                if self.stockoverview[produit] <= 0.1 or quantité <= 0.1 :
                     pass
                 elif self.stockoverview[produit] >= quantité : 
                     self.actualiseStock(produit,quantité)
                     self.ventes += quantité
                 else : 
+                    
                     self.quantitéRupture += quantité - self.stockoverview[produit] 
                     self.ventes += self.stockoverview[produit]
                     self.actualiseStock(produit,self.stockoverview[produit])
+
     def Dons(self):
         """Effectue les dons sur la période de référence"""
         
@@ -145,8 +147,9 @@ class Supermarket():
                     self.Demande[produit][-1] += quantité
                 else : 
                      self.Demande[produit] = [quantité]
+
     def Commande(self):
-        """Effectue les commandes au suppliers"""
+        """Effectue les commandes aux suppliers"""
         for key in self.Demande.keys() : 
             self.stock.append(self.supplier.commande(key,SurStock*grande_période*np.average(self.Demande[key][-moving_average_size:])- self.stockoverview[key]) )
 
@@ -208,7 +211,7 @@ class Customer:
         self.randomness[-1,:] =np.random.normal(0,1,size=len(ProductType))
         #nouveaux besoins
         
-        self.Besoin = np.sum(self.historique*self.ARcoef + self.randomness[:-1]*self.MAcoef,axis=0) + self.randomness[-1] + self.constants
+        self.Besoin = np.abs(np.sum(self.historique*self.ARcoef + self.randomness[:-1]*self.MAcoef,axis=0) + self.randomness[-1] + self.constants)
 
 #éléments échangés 
 class Product():
